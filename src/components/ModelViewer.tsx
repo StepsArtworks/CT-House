@@ -1,57 +1,37 @@
 import React, { Suspense } from 'react';
 import { Canvas } from '@react-three/fiber';
-import { OrbitControls, PerspectiveCamera, Environment } from '@react-three/drei';
-import { ModelState, FloorLevel } from '../types/model';
+import { OrbitControls, PerspectiveCamera, Environment, useGLTF } from '@react-three/drei';
+import { ModelState } from '../types/model';
 import LoadingScreen from './LoadingScreen';
-import * as THREE from 'three';
 
-// Mock sample model - replace with actual geometry
+// Preload the full house model
+useGLTF.preload('/public/assets/models/1FullHouse.glb');
+
 function HouseModel({ modelState }: { modelState: ModelState }) {
-  // Temporary box geometry to represent the house
-  const groundFloor = new THREE.BoxGeometry(5, 1, 5);
-  const firstFloor = new THREE.BoxGeometry(4.5, 1, 4.5);
-  const secondFloor = new THREE.BoxGeometry(4, 1, 4);
+  // Load the full house model
+  const { scene } = useGLTF('/public/assets/models/1FullHouse.glb');
   
+  // Clone the scene to avoid modifying the cached original
+  const model = React.useMemo(() => scene.clone(), [scene]);
+
+  // Cleanup function to dispose of materials and geometries
+  React.useEffect(() => {
+    return () => {
+      model.traverse((child) => {
+        if ('geometry' in child) {
+          child.geometry?.dispose();
+        }
+        if ('material' in child) {
+          const materials = Array.isArray(child.material) ? child.material : [child.material];
+          materials.forEach(material => material?.dispose());
+        }
+      });
+    };
+  }, [model]);
+
   return (
     <group>
-      {/* Ground Floor */}
-      <mesh 
-        geometry={groundFloor} 
-        position={[0, 0.5, 0]}
-        visible={modelState.floors.ground.visible}
-      >
-        <meshStandardMaterial 
-          color="#8B7355"
-          transparent
-          opacity={modelState.floors.ground.furnitureOpacity / 100}
-        />
-      </mesh>
-      
-      {/* First Floor */}
-      <mesh 
-        geometry={firstFloor}
-        position={[0, 2, 0]}
-        visible={modelState.floors.first.visible}
-      >
-        <meshStandardMaterial 
-          color="#A0522D"
-          transparent
-          opacity={modelState.floors.first.furnitureOpacity / 100}
-        />
-      </mesh>
-      
-      {/* Second Floor */}
-      <mesh 
-        geometry={secondFloor}
-        position={[0, 3.5, 0]}
-        visible={modelState.floors.second.visible}
-      >
-        <meshStandardMaterial 
-          color="#6B4423"
-          transparent
-          opacity={modelState.floors.second.furnitureOpacity / 100}
-        />
-      </mesh>
+      <primitive object={model} />
     </group>
   );
 }
@@ -68,7 +48,7 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ modelState }) => {
       ) : (
         <Canvas shadows>
           <Suspense fallback={<LoadingScreen progress={0} />}>
-            <PerspectiveCamera makeDefault position={[10, 10, 10]} fov={45} />
+            <PerspectiveCamera makeDefault position={[10, 5, 10]} fov={45} />
             <ambientLight intensity={0.5} />
             <directionalLight 
               position={[10, 10, 10]} 
