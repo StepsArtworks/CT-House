@@ -4,40 +4,27 @@ import { Html, useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
 
 function useModels() {
-  const fullHouse = useGLTF('/models/1FullHouse.glb', true);
-  const groundFloor = useGLTF('/models/GroundFloor.glb', true);
-  const firstFloor = useGLTF('/models/FirstFloor.glb', true);
-  const basement = useGLTF('/models/BasementFloor.glb', true);
+  const fullHouse = useGLTF('/models/1FullHouse.glb');
+  const groundFloor = useGLTF('/models/GroundFloor.glb');
+  const firstFloor = useGLTF('/models/FirstFloor.glb');
+  const basement = useGLTF('/models/BasementFloor.glb');
   
-  // Cleanup function to dispose of models when component unmounts
   useEffect(() => {
     return () => {
-      fullHouse.scene.traverse((object) => {
-        if (object instanceof THREE.Mesh) {
-          object.geometry.dispose();
-          object.material.dispose();
-        }
-      });
-      groundFloor.scene.traverse((object) => {
-        if (object instanceof THREE.Mesh) {
-          object.geometry.dispose();
-          object.material.dispose();
-        }
-      });
-      firstFloor.scene.traverse((object) => {
-        if (object instanceof THREE.Mesh) {
-          object.geometry.dispose();
-          object.material.dispose();
-        }
-      });
-      basement.scene.traverse((object) => {
-        if (object instanceof THREE.Mesh) {
-          object.geometry.dispose();
-          object.material.dispose();
-        }
+      [fullHouse, groundFloor, firstFloor, basement].forEach(model => {
+        model.scene.traverse((object) => {
+          if (object instanceof THREE.Mesh) {
+            object.geometry.dispose();
+            if (Array.isArray(object.material)) {
+              object.material.forEach(material => material.dispose());
+            } else {
+              object.material.dispose();
+            }
+          }
+        });
       });
     };
-  }, []);
+  }, [fullHouse, groundFloor, firstFloor, basement]);
   
   return {
     fullHouse,
@@ -47,37 +34,13 @@ function useModels() {
   };
 }
 
-interface FloorProps {
-  model: THREE.Group;
-  position: [number, number, number];
-  isVisible: boolean;
-  name: string;
-}
-
-const Floor: React.FC<FloorProps> = ({ model, position, isVisible, name }) => {
-  if (!isVisible) return null;
-  
-  return (
-    <group position={position}>
-      <primitive object={model} />
-      <Html
-        position={[0, 2, 0]}
-        center
-        distanceFactor={10}
-      >
-        <div className="px-2 py-1 bg-white/90 dark:bg-slate-800/90 rounded text-xs shadow-sm">
-          {name}
-        </div>
-      </Html>
-    </group>
-  );
-};
-
 const HouseModel: React.FC = () => {
-  const { currentFloor, isLoading } = useModelContext();
+  const { currentFloor, setIsLoading } = useModelContext();
   const models = useModels();
   
-  if (isLoading) return null;
+  useEffect(() => {
+    setIsLoading(false);
+  }, [setIsLoading]);
 
   // Show full house model
   if (currentFloor === -1) {
@@ -88,37 +51,39 @@ const HouseModel: React.FC = () => {
     );
   }
   
-  // Define floor configurations
-  const floors = [
-    {
-      name: 'Basement',
-      position: [0, 0, 0] as [number, number, number],
-      model: models.basement.scene,
-    },
-    {
-      name: 'Ground Floor',
-      position: [0, 0, 0] as [number, number, number],
-      model: models.groundFloor.scene,
-    },
-    {
-      name: 'First Floor',
-      position: [0, 0, 0] as [number, number, number],
-      model: models.firstFloor.scene,
-    }
-  ];
-
-  // Show selected floor
-  const selectedFloor = floors[currentFloor];
-  if (!selectedFloor) return null;
+  // Show individual floor based on selection
+  let currentModel;
+  let floorName;
+  
+  switch(currentFloor) {
+    case 0:
+      currentModel = models.basement.scene;
+      floorName = 'Basement';
+      break;
+    case 1:
+      currentModel = models.groundFloor.scene;
+      floorName = 'Ground Floor';
+      break;
+    case 2:
+      currentModel = models.firstFloor.scene;
+      floorName = 'First Floor';
+      break;
+    default:
+      return null;
+  }
 
   return (
     <group>
-      <Floor 
-        position={selectedFloor.position}
-        model={selectedFloor.model}
-        isVisible={true}
-        name={selectedFloor.name}
-      />
+      <primitive object={currentModel} />
+      <Html
+        position={[0, 2, 0]}
+        center
+        distanceFactor={10}
+      >
+        <div className="px-2 py-1 bg-white/90 dark:bg-slate-800/90 rounded text-xs shadow-sm">
+          {floorName}
+        </div>
+      </Html>
     </group>
   );
 };
