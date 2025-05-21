@@ -7,10 +7,4 @@ export default defineConfig({
   optimizeDeps: {
     exclude: ['lucide-react'],
   },
-  assetsInclude: ['**/*.glb', '**/*.gltf'], // Include both GLB and GLTF files
-  build: {
-    assetsInlineLimit: 0, // Ensure large binary files are not inlined
-  },
-  base: '/capetownhouse/',
-  publicDir: 'public',
 });

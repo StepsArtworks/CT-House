@@ -3,6 +3,7 @@ import { Canvas } from '@react-three/fiber';
 import { 
   OrbitControls, 
   PerspectiveCamera, 
+  Environment, 
   Grid,
   Html,
   useProgress 
@@ -69,6 +70,8 @@ const ModelViewer: React.FC = () => {
         <HouseModel />
         
         {showMeasurements && <Grid infiniteGrid fadeDistance={30} fadeStrength={5} />}
+        
+        <Environment preset="city" />
         
         {isLoading && <Loader3D />}
       </Canvas>

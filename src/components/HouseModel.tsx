@@ -1,73 +1,52 @@
 import React from 'react';
 import { useModelContext } from '../context/ModelContext';
-import { Html, useGLTF } from '@react-three/drei';
+import { Box, Html } from '@react-three/drei';
 import { ViewMode } from '../context/ModelContext';
 import * as THREE from 'three';
 
-// Load all models
-function useModels() {
-  const groundFloor = useGLTF('./models/GroundFloor.glb');
-  const firstFloor = useGLTF('./models/FirstFloor.glb');
-  const basement = useGLTF('./models/BasementFloor.glb');
-  const roof = useGLTF('./models/Roof.glb');
-  const basementFurniture = useGLTF('./models/BasementFurniture.glb');
-  const groundFurniture = useGLTF('./models/GroundFloorFurniture.glb');
-  const firstFurniture = useGLTF('./models/FirstFloorFurniture.glb');
-  
-  return {
-    groundFloor,
-    firstFloor,
-    basement,
-    roof,
-    basementFurniture,
-    groundFurniture,
-    firstFurniture
-  };
-}
+// Colors for the different floors
+const floorColors = [
+  new THREE.Color('#90cdf4'), // First floor - light blue
+  new THREE.Color('#9ae6b4'), // Second floor - light green
+  new THREE.Color('#fbd38d'), // Third floor - light yellow
+];
 
 interface FloorProps {
-  model: THREE.Group;
-  furniture: THREE.Group;
   position: [number, number, number];
+  size: [number, number, number];
+  color: THREE.Color;
   isVisible: boolean;
   name: string;
   viewMode: ViewMode;
 }
 
-const Floor: React.FC<FloorProps> = ({ model, furniture, position, isVisible, name, viewMode }) => {
+const Floor: React.FC<FloorProps> = ({ position, size, color, isVisible, name, viewMode }) => {
   if (!isVisible) return null;
   
-  // Clone the models to avoid sharing materials
-  const floorModel = model.clone();
-  const furnitureModel = furniture.clone();
-  
-  // Apply material based on view mode
-  floorModel.traverse((child) => {
-    if (child instanceof THREE.Mesh) {
-      const material = child.material.clone();
-      switch (viewMode) {
-        case ViewMode.WIREFRAME:
-          material.wireframe = true;
-          break;
-        case ViewMode.TRANSPARENT:
-          material.transparent = true;
-          material.opacity = 0.5;
-          break;
-        default:
-          break;
-      }
-      child.material = material;
-    }
-  });
+  // Determine material based on view mode
+  let material;
+  switch (viewMode) {
+    case ViewMode.WIREFRAME:
+      material = <meshStandardMaterial wireframe color={color} />;
+      break;
+    case ViewMode.TRANSPARENT:
+      material = <meshStandardMaterial transparent opacity={0.5} color={color} />;
+      break;
+    case ViewMode.SOLID:
+    default:
+      material = <meshStandardMaterial color={color} />;
+      break;
+  }
   
   return (
-    <group position={position}>
-      <primitive object={floorModel} />
-      <primitive object={furnitureModel} />
+    <group position={[position[0], position[1], position[2]]}>
+      <Box args={size} castShadow receiveShadow>
+        {material}
+      </Box>
       
       {/* Floor label */}
       <Html
-        position={[0, 2, 0]}
+        position={[0, size[1]/2 + 0.2, 0]}
         center
         distanceFactor={10}
       >
@@ -79,32 +58,29 @@ const Floor: React.FC<FloorProps> = ({ model, furniture, position, isVisible, na
   );
 };
 
+// Mock house model with three floors
 const HouseModel: React.FC = () => {
   const { currentFloor, viewMode, isLoading } = useModelContext();
-  const models = useModels();
   
   if (isLoading) return null;
   
-  // Define the floor configurations
+  // Define the floor dimensions and positions
   const floors = [
     {
-      name: 'Basement',
-      position: [0, -3, 0] as [number, number, number],
-      model: models.basement.scene,
-      furniture: models.basementFurniture.scene,
-    },
-    {
       name: 'Ground Floor',
-      position: [0, 0, 0] as [number, number, number],
-      model: models.groundFloor.scene,
-      furniture: models.groundFurniture.scene,
+      position: [0, 0.5, 0] as [number, number, number],
+      size: [10, 1, 8] as [number, number, number],
     },
     {
       name: 'First Floor',
-      position: [0, 3, 0] as [number, number, number],
-      model: models.firstFloor.scene,
-      furniture: models.firstFurniture.scene,
-    }
+      position: [0, 2, 0] as [number, number, number],
+      size: [9, 1, 7] as [number, number, number],
+    },
+    {
+      name: 'Second Floor',
+      position: [0, 3.5, 0] as [number, number, number],
+      size: [8, 1, 6] as [number, number, number],
+    },
   ];
 
   return (
@@ -113,15 +89,13 @@ const HouseModel: React.FC = () => {
         <Floor 
           key={index}
           position={floor.position}
-          model={floor.model}
-          furniture={floor.furniture}
+          size={floor.size}
+          color={floorColors[index]}
           isVisible={currentFloor === -1 || currentFloor === index}
           name={floor.name}
           viewMode={viewMode}
         />
       ))}
-      {/* Roof is always visible */}
-      <primitive object={models.roof.scene} position={[0, 6, 0]} />
     </group>
   );
 };
