@@ -7,7 +7,7 @@ export default defineConfig({
   optimizeDeps: {
     exclude: ['lucide-react'],
   },
-  assetsInclude: ['**/*.glb', '**/*.gltf'], // Include both GLB and GLTF files
+  assetsInclude: ['**/*.glb'], // Include GLB files
   build: {
     assetsInlineLimit: 50000000, // Increased to 50MB to handle large GLB files
     chunkSizeWarningLimit: 50000, // Increased chunk size warning limit
