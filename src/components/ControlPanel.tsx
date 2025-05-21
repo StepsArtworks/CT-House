@@ -1,16 +1,11 @@
 import React from 'react';
 import { useModelContext } from '../context/ModelContext';
 import FloorSelector from './FloorSelector';
-import ViewModeSelector from './ViewModeSelector';
-import ModelInfo from './ModelInfo';
-import MeasurementsToggle from './MeasurementsToggle';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 const ControlPanel: React.FC = () => {
   const { isPanelOpen, togglePanel } = useModelContext();
 
-  // On mobile, the panel is a sliding drawer from the side
-  // On desktop, it's a fixed sidebar
   return (
     <>
       {/* Mobile panel (slide-in) */}
@@ -28,7 +23,7 @@ const ControlPanel: React.FC = () => {
         ${isPanelOpen ? 'translate-x-0' : 'translate-x-full lg:translate-x-0 lg:w-0 lg:min-w-0 lg:opacity-0'}`}
       >
         <div className="p-4 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center">
-          <h2 className="text-lg font-semibold">Controls</h2>
+          <h2 className="text-lg font-semibold">Floor Selection</h2>
           <button 
             onClick={togglePanel}
             className="lg:hidden btn-secondary p-1 rounded-lg"
@@ -40,9 +35,6 @@ const ControlPanel: React.FC = () => {
         
         <div className="p-4 flex flex-col gap-6 flex-1">
           <FloorSelector />
-          <ViewModeSelector />
-          <MeasurementsToggle />
-          <ModelInfo />
         </div>
       </div>
       

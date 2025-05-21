@@ -9,7 +9,8 @@ export default defineConfig({
   },
   assetsInclude: ['**/*.glb', '**/*.gltf'], // Include both GLB and GLTF files
   build: {
-    assetsInlineLimit: 0, // Ensure large binary files are not inlined
+    assetsInlineLimit: 50000000, // Increased to 50MB to handle large GLB files
+    chunkSizeWarningLimit: 50000, // Increased chunk size warning limit
   },
   base: '/capetownhouse/',
   publicDir: 'public',

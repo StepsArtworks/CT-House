@@ -1,71 +1,65 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useModelContext } from '../context/ModelContext';
 import { Html, useGLTF } from '@react-three/drei';
-import { ViewMode } from '../context/ModelContext';
 import * as THREE from 'three';
 
-// Load all models
 function useModels() {
-  const groundFloor = useGLTF('./models/GroundFloor.glb');
-  const firstFloor = useGLTF('./models/FirstFloor.glb');
-  const basement = useGLTF('./models/BasementFloor.glb');
-  const roof = useGLTF('./models/Roof.glb');
-  const basementFurniture = useGLTF('./models/BasementFurniture.glb');
-  const groundFurniture = useGLTF('./models/GroundFloorFurniture.glb');
-  const firstFurniture = useGLTF('./models/FirstFloorFurniture.glb');
+  const fullHouse = useGLTF('/models/1FullHouse.glb', true);
+  const groundFloor = useGLTF('/models/GroundFloor.glb', true);
+  const firstFloor = useGLTF('/models/FirstFloor.glb', true);
+  const basement = useGLTF('/models/BasementFloor.glb', true);
+  
+  // Cleanup function to dispose of models when component unmounts
+  useEffect(() => {
+    return () => {
+      fullHouse.scene.traverse((object) => {
+        if (object instanceof THREE.Mesh) {
+          object.geometry.dispose();
+          object.material.dispose();
+        }
+      });
+      groundFloor.scene.traverse((object) => {
+        if (object instanceof THREE.Mesh) {
+          object.geometry.dispose();
+          object.material.dispose();
+        }
+      });
+      firstFloor.scene.traverse((object) => {
+        if (object instanceof THREE.Mesh) {
+          object.geometry.dispose();
+          object.material.dispose();
+        }
+      });
+      basement.scene.traverse((object) => {
+        if (object instanceof THREE.Mesh) {
+          object.geometry.dispose();
+          object.material.dispose();
+        }
+      });
+    };
+  }, []);
   
   return {
+    fullHouse,
     groundFloor,
     firstFloor,
-    basement,
-    roof,
-    basementFurniture,
-    groundFurniture,
-    firstFurniture
+    basement
   };
 }
 
 interface FloorProps {
   model: THREE.Group;
-  furniture: THREE.Group;
   position: [number, number, number];
   isVisible: boolean;
   name: string;
-  viewMode: ViewMode;
 }
 
-const Floor: React.FC<FloorProps> = ({ model, furniture, position, isVisible, name, viewMode }) => {
+const Floor: React.FC<FloorProps> = ({ model, position, isVisible, name }) => {
   if (!isVisible) return null;
-  
-  // Clone the models to avoid sharing materials
-  const floorModel = model.clone();
-  const furnitureModel = furniture.clone();
-  
-  // Apply material based on view mode
-  floorModel.traverse((child) => {
-    if (child instanceof THREE.Mesh) {
-      const material = child.material.clone();
-      switch (viewMode) {
-        case ViewMode.WIREFRAME:
-          material.wireframe = true;
-          break;
-        case ViewMode.TRANSPARENT:
-          material.transparent = true;
-          material.opacity = 0.5;
-          break;
-        default:
-          break;
-      }
-      child.material = material;
-    }
-  });
   
   return (
     <group position={position}>
-      <primitive object={floorModel} />
-      <primitive object={furnitureModel} />
-      
-      {/* Floor label */}
+      <primitive object={model} />
       <Html
         position={[0, 2, 0]}
         center
@@ -80,50 +74,61 @@ const Floor: React.FC<FloorProps> = ({ model, furniture, position, isVisible, na
 };
 
 const HouseModel: React.FC = () => {
-  const { currentFloor, viewMode, isLoading } = useModelContext();
+  const { currentFloor, isLoading } = useModelContext();
   const models = useModels();
   
   if (isLoading) return null;
+
+  // Show full house model
+  if (currentFloor === -1) {
+    return (
+      <group>
+        <primitive object={models.fullHouse.scene} />
+      </group>
+    );
+  }
   
-  // Define the floor configurations
+  // Define floor configurations
   const floors = [
     {
       name: 'Basement',
-      position: [0, -3, 0] as [number, number, number],
+      position: [0, 0, 0] as [number, number, number],
       model: models.basement.scene,
-      furniture: models.basementFurniture.scene,
     },
     {
       name: 'Ground Floor',
       position: [0, 0, 0] as [number, number, number],
       model: models.groundFloor.scene,
-      furniture: models.groundFurniture.scene,
     },
     {
       name: 'First Floor',
-      position: [0, 3, 0] as [number, number, number],
+      position: [0, 0, 0] as [number, number, number],
       model: models.firstFloor.scene,
-      furniture: models.firstFurniture.scene,
     }
   ];
 
+  // Show selected floor
+  const selectedFloor = floors[currentFloor];
+  if (!selectedFloor) return null;
+
   return (
     <group>
-      {floors.map((floor, index) => (
-        <Floor 
-          key={index}
-          position={floor.position}
-          model={floor.model}
-          furniture={floor.furniture}
-          isVisible={currentFloor === -1 || currentFloor === index}
-          name={floor.name}
-          viewMode={viewMode}
-        />
-      ))}
-      {/* Roof is always visible */}
-      <primitive object={models.roof.scene} position={[0, 6, 0]} />
+      <Floor 
+        position={selectedFloor.position}
+        model={selectedFloor.model}
+        isVisible={true}
+        name={selectedFloor.name}
+      />
     </group>
   );
 };
+
+// Preload models
+useGLTF.preload([
+  '/models/1FullHouse.glb',
+  '/models/GroundFloor.glb',
+  '/models/FirstFloor.glb',
+  '/models/BasementFloor.glb'
+]);
 
 export default HouseModel;
